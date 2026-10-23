@@ -28,7 +28,7 @@
 pnpm run test:bmtk --grep REMOTE-MATCH-09 --headed
 ```
 
-用例清单：`pnpm run cases` 会把 `playwright test --list` 的结果渲染成中文清单 `docs/用例清单.md`（用例名取自 `test('…')` 里 `编号 + 中文描述` 的写法，不用手工维护）。
+业务用例清单：`pnpm run cases` 会把 `playwright test --list` 的结果渲染成 `docs/业务用例清单.md`，只收 `journeys/` 下的业务用例（project `bmtk`），离线检查不进清单。用例名取自 `test('…')` 里 `编号 + 中文描述` 的写法，不用手工维护。
 
 在 PyCharm 中打开 `package.json`，点击 `scripts` 中 `test:ui` 左侧的运行按钮，再选 Run，打开 Playwright 测试面板。面板会自动发现 `journeys/` 的业务用例，在用例名称旁点击三角按钮即可单独运行。
 
