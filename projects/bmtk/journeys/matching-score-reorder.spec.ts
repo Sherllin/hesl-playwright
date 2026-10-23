@@ -3,7 +3,7 @@ import { test } from '../support/fixtures';
 import { TaskPage } from '../support/task.page';
 import { ProjectPage } from '../project-management/project.page';
 import { ActivitiesPage } from '../project-management/activities.page';
-import { publishMatchingQuestion } from './publish-matching.flow';
+import { publishMatchingQuestion } from '../flows/publish-matching.flow';
 import { scoreAndSwapMatching } from '../compose/reorder-matching.flow';
 import { ComposePage } from '../compose/compose.page';
 import { PaperReviewPage } from '../paper-review/paper-review.page';

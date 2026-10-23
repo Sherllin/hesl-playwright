@@ -5,6 +5,7 @@ test-results/
 blob-report/
 playwright/.cache/
 coverage/
+docs/测试运行记录.md
 .idea/
 .env
 .env.*

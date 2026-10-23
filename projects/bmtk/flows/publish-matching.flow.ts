@@ -10,7 +10,7 @@ import { ActivitiesPage } from '../project-management/activities.page';
 import { MatchingAuthoringPage } from '../authoring/matching.page';
 import { QuestionReviewPage } from '../question-review/question-review.page';
 
-// 多个 MATCH 场景可复用的真实前置，显式返回题库和原题，不通过监听别的流程猜ID。
+// 跨业务前置：题库、项目、出题、审题；显式返回题库和原题，不通过监听别的流程猜ID。
 export async function publishMatchingQuestion(actors: Actors, sample: MatchingSample, runId: string):
   Promise<{ bank: BankRef; source: MatchingQuestion }> {
   const admin = await actors.get('admin');
