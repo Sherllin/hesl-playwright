@@ -1,0 +1,11 @@
+node_modules/
+.pnpm-store/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+coverage/
+.idea/
+.env
+.env.*
+!.env.example

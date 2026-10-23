@@ -1,0 +1,25 @@
+{
+  "name": "bmtk-playwright",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.7.0",
+  "engines": { "node": ">=20.11" },
+  "scripts": {
+    "test": "playwright test",
+    "test:bmtk": "playwright test --project=bmtk",
+    "test:ui": "playwright test --project=bmtk --ui",
+    "test:list": "playwright test --list",
+    "test:headed": "playwright test --headed",
+    "test:checks": "playwright test --project=checks",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/json-bigint": "1.0.4",
+    "@types/node": "20.19.43",
+    "dotenv": "16.6.1",
+    "json-bigint": "1.0.0",
+    "typescript": "5.9.3"
+  }
+}
