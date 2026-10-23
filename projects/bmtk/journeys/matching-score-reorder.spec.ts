@@ -14,7 +14,7 @@ import type { MatchingSample } from '../question-bank/matching';
 
 // 迁移来源：原 e2e/specs/remote-smoke/02-project/my-task/matching-compose-child-score-reorder.spec.ts。
 // 保留真实出题审核入库、组卷暂存重进、审卷及最终试卷/答案 PDF 核对。
-test('REMOTE-MATCH-09 匹配题2/5分换序后分值、答案、来源身份和最终PDF保持', async ({ actors, bmtkConfig }) => {
+test('CASE-001 匹配题2/5分换序后分值、答案、来源身份和最终PDF保持', async ({ actors, bmtkConfig }) => {
   test.setTimeout(1_200_000);
   // 缩短时间戳，确保题库等名称不超过30字符；保留随机后缀隔离每次运行。
   const runId = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}`;

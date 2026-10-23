@@ -25,7 +25,7 @@
 运行指定用例：
 
 ```bash
-pnpm run test:bmtk --grep REMOTE-MATCH-09 --headed
+pnpm run test:bmtk --grep CASE-001 --headed
 ```
 
 业务用例清单：`pnpm run cases` 会把 `playwright test --list` 的结果渲染成 `docs/业务用例清单.md`，只收 `journeys/` 下的业务用例（project `bmtk`），离线检查不进清单。用例名取自 `test('…')` 里 `编号 + 中文描述` 的写法，不用手工维护。

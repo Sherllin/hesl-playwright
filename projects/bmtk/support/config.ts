@@ -19,7 +19,7 @@ export function loadBmtkConfig(env: NodeJS.ProcessEnv = process.env): BmtkConfig
     if (!value?.trim()) throw new Error(`缺少 ${key}，请按 .env.example 配置本机专用测试账号`);
     return value;
   };
-  if (env.BMTK_ALLOW_WRITES !== '1') throw new Error('REMOTE-MATCH-09 会创建并保留业务数据；执行前需设置 BMTK_ALLOW_WRITES=1');
+  if (env.BMTK_ALLOW_WRITES !== '1') throw new Error('测试会创建并保留业务数据；执行前需设置 BMTK_ALLOW_WRITES=1');
   const baseURL = new URL(required('BMTK_BASE_URL'));
   if (!['http:', 'https:'].includes(baseURL.protocol) || baseURL.username || baseURL.password)
     throw new Error('BMTK_BASE_URL 必须是无凭据的 HTTP(S) 地址');
