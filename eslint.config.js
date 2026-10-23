@@ -8,6 +8,13 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['**/*.mjs', '**/*.js'],
+    languageOptions: {
+      // 脚本跑在 Node 里；不引 globals 包，只声明脚本实际用到的全局。
+      globals: { process: 'readonly', console: 'readonly', Buffer: 'readonly', URL: 'readonly', setTimeout: 'readonly' },
+    },
+  },
+  {
     files: ['**/*.ts'],
     rules: {
       // 环境全局（process、Buffer、setTimeout）由 tsc 的 node 类型提供。
