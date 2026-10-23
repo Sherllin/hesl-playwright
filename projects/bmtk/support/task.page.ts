@@ -1,25 +1,17 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page, type Response } from '@playwright/test';
+import { waitForBusinessResponse } from './api';
 const ROUTES = { myTask: '/project/task', forbidden: '/403' };
+const MY_TASK_LIST = '/qrProject/my-task/list';
+const isMyTaskList = (response: Response) =>
+  response.request().method() === 'POST' && response.url().includes(MY_TASK_LIST);
 
 export async function gotoMyTask(page: Page): Promise<void> {
-  let response;
-  let responseBody: { code?: string } | undefined;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const loaded = page.waitForResponse(
-      async (candidate) => {
-        if (
-          candidate.request().method() !== 'POST'
-          || !candidate.url().includes('/qrProject/my-task/list')
-        ) {
-          return false;
-        }
-        const body = await candidate.json().catch(() => undefined);
-        if (!body) return false;
-        responseBody = body;
-        return true;
-      },
-      { timeout: 90_000 },
-    ).catch(() => undefined);
+    // 先挂监听再导航；被回收的响应由 waitForBusinessResponse 跳过，不再抛 CDP 协议错误。
+    const loaded = waitForBusinessResponse(page, isMyTaskList).then(
+      value => value,
+      () => undefined,
+    );
     if (attempt === 0) {
       await page.goto(ROUTES.myTask, {
         waitUntil: 'domcontentloaded',
@@ -36,17 +28,17 @@ export async function gotoMyTask(page: Page): Promise<void> {
       state: 'visible',
       timeout: 90_000,
     });
-    response = await loaded;
-    if (!response && attempt === 0) continue;
-    break;
+    const located = await loaded;
+    if (!located) continue;
+    expect(located.response.ok(), '“我的任务”列表请求必须成功').toBeTruthy();
+    expect(located.body.code, '“我的任务”列表请求必须业务成功').toBe('E200');
+    await page.locator('.ant-spin-spinning').waitFor({
+      state: 'hidden',
+      timeout: 30_000,
+    });
+    return;
   }
-  expect(response, '“我的任务”列表请求必须完成').toBeTruthy();
-  expect(responseBody?.code, '“我的任务”列表请求必须业务成功').toBe('E200');
-  expect(response?.ok(), '“我的任务”列表请求必须成功').toBeTruthy();
-  await page.locator('.ant-spin-spinning').waitFor({
-    state: 'hidden',
-    timeout: 30_000,
-  });
+  throw new Error('“我的任务”列表请求没有拿到可读的成功响应（已重载一次）');
 }
 
 export function myTaskProjectGroup(page: Page, projectName: string): Locator {

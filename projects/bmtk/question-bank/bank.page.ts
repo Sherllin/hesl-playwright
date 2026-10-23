@@ -1,5 +1,6 @@
 // 从原 e2e/src/remote/bank-management.page.ts 仅提取本场景使用的页面能力。
 import { expect, type Locator, type Page, type Response } from '@playwright/test';
+import { waitForBusinessResponse } from '../support/api';
 type Envelope = { code?: string; message?: string };
 export class BankPage {
   constructor(private readonly page: Page) { }
@@ -18,14 +19,16 @@ export class BankPage {
   }
 
   async gotoRoot(): Promise<void> {
-    const loaded = this.page.waitForResponse(async response => {
-      if (response.request().method() !== 'GET'
-        || !new URL(response.url()).pathname.endsWith('/bankFolder/list')) return false;
-      // 登录落地页也会请求列表，导航取消的旧响应不能作为本次页面已加载的证据。
-      return (await response.json().catch(() => null))?.code === 'E200';
-    });
+    // 谓词只判断 method+url，body 在回调之外读取：导航取消的旧响应 body 可能已被回收。
+    // 登录落地页也会请求列表，所以只接受业务成功的响应作为本次页面已加载的证据。
+    const loaded = waitForBusinessResponse(
+      this.page,
+      response => response.request().method() === 'GET'
+        && new URL(response.url()).pathname.endsWith('/bankFolder/list'),
+      { accept: body => body.code === 'E200' },
+    );
     await this.page.goto('/question/course/manage', { waitUntil: 'domcontentloaded', timeout: 90_000 });
-    await this.expectBusinessSuccess(await loaded, '加载学科题库列表');
+    await loaded;
     await expect(this.page).not.toHaveURL(/\/(?:login|403)(?:\?|$)/);
     await expect(this.page.getByRole('button', { name: '新建学科题库' })).toBeVisible();
   }
