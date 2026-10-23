@@ -10,7 +10,7 @@ export const runtimeDefaults = {
   forbidOnly: Boolean(process.env.CI),
   // 运行记录收进依赖缓存，避免在项目根目录生成文件夹。
   outputDir: './node_modules/.cache/playwright/test-results',
-  reporter: [['list'], ['./packages/runtime/run-history-reporter.ts']],
+  reporter: [['list'], ['./packages/runtime/run-history-reporter.ts', { projects: ['bmtk'] }]],
   use: {
     browserName: 'chromium',
     headless: true,

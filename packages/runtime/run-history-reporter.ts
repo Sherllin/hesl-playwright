@@ -2,7 +2,8 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
-const header = '# 测试运行记录\n\n仅保存在本机；最多保留最新 100 条，编号持续递增，最新记录在上，时间为北京时间。\n\n'
+const header = '# 测试运行记录\n\n仅保存在本机；只记录业务用例（project bmtk）的运行，离线检查不写入。'
+  + '最多保留最新 100 条，编号持续递增，最新记录在上，时间为北京时间。\n\n'
   + '| 编号 | 运行时间（北京时间） | 项目 | 环境 | 地址 | 用例 | 结果 | 耗时 | 重试次数 |\n'
   + '|---|---|---|---|---|---|---|---|---|\n';
 const statuses: Record<TestResult['status'], string> = {
@@ -74,7 +75,7 @@ function readHistory(file: string): { id: number; values: string[] }[] {
 export default class RunHistoryReporter implements Reporter {
   private outputFile = '';
 
-  constructor(private options: { outputFile?: string } = {}) {}
+  constructor(private options: { outputFile?: string; projects?: string[] } = {}) {}
 
   onBegin(config: FullConfig): void {
     const root = config.configFile ? dirname(config.configFile) : config.rootDir;
@@ -83,6 +84,8 @@ export default class RunHistoryReporter implements Reporter {
 
   onTestEnd(test: TestCase, result: TestResult): void {
     const project = test.parent.project();
+    // 只记名单内的项目：离线检查一跑几十条，会把业务轨迹埋掉。
+    if (this.options.projects && !this.options.projects.includes(project?.name ?? '')) return;
     const environment = project?.metadata.runEnvironment;
     const values = [
       clock.format(result.startTime), project?.name ?? '',

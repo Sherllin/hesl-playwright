@@ -107,3 +107,28 @@ test('兼容旧历史，缺少地址显示横线，只保留最新100条且编�
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('不在记录名单内的项目不写运行记录', () => {
+  test.setTimeout(30_000);
+  const dir = mkdtempSync(join(tmpdir(), 'bmtk-history-filter-'));
+  const history = join(dir, 'history.md');
+  try {
+    writeFileSync(join(dir, 'playwright.config.cjs'), `module.exports = {
+      testDir: '.', testMatch: '*.spec.cjs', workers: 1,
+      outputDir: ${JSON.stringify(join(dir, 'results'))},
+      reporter: [[${JSON.stringify(resolve('packages/runtime/run-history-reporter.ts'))},
+        { outputFile: ${JSON.stringify(history)}, projects: ['bmtk'] }]],
+      projects: [{ name: 'checks' }]
+    };`);
+    writeFileSync(join(dir, 'sample.spec.cjs'), `const { test } = require(${JSON.stringify(require.resolve('@playwright/test'))});
+      test('离线检查', () => {});
+    `);
+    const run = spawnSync(process.execPath,
+      [cli, 'test', '--config', join(dir, 'playwright.config.cjs')],
+      { encoding: 'utf8', timeout: 15_000 });
+    expect(run.status, run.stdout + run.stderr).toBe(0);
+    expect(existsSync(history), 'checks 项目不应写入运行记录').toBe(false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
