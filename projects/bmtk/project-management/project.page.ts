@@ -2,8 +2,12 @@ import { expect, type Page } from '@playwright/test';
 import { selectMembersInModal } from '../support/member-picker';
 import { businessResponse, parseJson, responseFor } from '../support/api';
 const ROUTES = { myProject: '/project/my' };
+type CreateProject = { name: string; leader: string } & (
+  { activity: '开放式征题' | '只制卷'; bankName: string } |
+  { activity: '无模板'; folderName: string }
+);
 export class ProjectPage {
-  async create(input: { name: string; leader: string; activity: '开放式征题' | '只制卷'; bankName: string }): Promise<{ bankId: string }> {
+  async create(input: CreateProject): Promise<{ bankId: string }> {
     await this.page.goto('/project/manage', { waitUntil: 'domcontentloaded' });
     await this.page.getByRole('button', { name: '新建命题项目', exact: true }).click();
     const drawer = this.page.locator('.ant-drawer-content').filter({ hasText: '新建命题项目' });
@@ -16,28 +20,40 @@ export class ProjectPage {
     } else {
       await this.page.getByRole('button', { name: /编辑活动/ }).click();
       const modal = this.page.locator('.ant-modal-content').filter({ hasText: '选择项目活动' });
-      await modal.getByRole('radio', { name: /^组卷审卷制卷[：:]/ }).click();
+      await modal.getByRole('radio', { name: input.activity === '无模板' ? /^无模板[：:]/ : /^组卷审卷制卷[：:]/ }).click();
       await modal.getByRole('button', { name: /确\s*定/ }).click();
       await expect(modal).toBeHidden();
     }
-    const bank = drawer.getByRole('combobox');
-    await bank.click();
-    if (await bank.isEditable()) await bank.fill(input.bankName);
-    await this.page.locator('.ant-select-dropdown:visible').getByTitle(input.bankName, { exact: true }).click();
-    await drawer.getByText('题库资源配置', { exact: true }).click();
+    if (input.activity === '无模板') {
+      const folder = drawer.locator('#folderId');
+      await folder.click();
+      if (await folder.isEditable()) await folder.fill(input.folderName);
+      await this.page.locator('.ant-select-dropdown:visible').getByTitle(input.folderName, { exact: true }).click();
+    } else {
+      const bank = drawer.getByRole('combobox');
+      await bank.click();
+      if (await bank.isEditable()) await bank.fill(input.bankName);
+      await this.page.locator('.ant-select-dropdown:visible').getByTitle(input.bankName, { exact: true }).click();
+      await drawer.getByText('题库资源配置', { exact: true }).click();
+    }
     const created = responseFor(this.page, 'POST', '/qrProject/add');
     await drawer.getByRole('button', { name: /^确\s*定$/ }).click();
     const response = await created;
-    await businessResponse(response);
+    const data = await businessResponse<{ bankId: string }>(response);
     const sent = parseJson<{ projectManagers: Array<{ name: string }>; bankMode: string; bankIds: string[]; primaryBankId: string }>(response.request().postData()!);
     expect(sent.projectManagers.map(m => m.name)).toEqual([input.leader]);
-    expect(sent.bankMode).toBe('EXISTING');
-    expect(sent.bankIds).toHaveLength(1);
-    expect(typeof sent.primaryBankId).toBe('string');
-    expect(sent.primaryBankId).toBe(sent.bankIds[0]);
+    if (input.activity === '无模板') {
+      expect(sent.bankMode).toBe('AUTO_EMPTY');
+      expect(typeof data.bankId, '无模板自动创建的题库ID必须为字符串').toBe('string');
+    } else {
+      expect(sent.bankMode).toBe('EXISTING');
+      expect(sent.bankIds).toHaveLength(1);
+      expect(typeof sent.primaryBankId).toBe('string');
+      expect(sent.primaryBankId).toBe(sent.bankIds[0]);
+    }
     await expect(drawer).toBeHidden();
     await expect(this.page.getByText(input.name, { exact: true })).toBeVisible();
-    return { bankId: sent.primaryBankId };
+    return { bankId: input.activity === '无模板' ? data.bankId : sent.primaryBankId };
   }
   constructor(private readonly page: Page) { }
 

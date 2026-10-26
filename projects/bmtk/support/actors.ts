@@ -1,6 +1,7 @@
 import { expect, type Browser, type BrowserContext, type Page, type Route } from '@playwright/test';
 import type { BmtkConfig, Credentials, Role } from './config';
 import { businessResponse, readApi, responseFor, parseJson, type Envelope } from './api';
+import { waitForAdminLanding } from './admin-landing';
 
 export interface Actor { page: Page; token: string; id: string; name: string }
 
@@ -56,17 +57,7 @@ async function login(page: Page, credentials: Credentials, tenantName: string, r
   expect(identity.tenantUserDTO.code, '当前登录者必须是指定账号').toBe(credentials.username);
   expect(typeof identity.tenantUserDTO.id).toBe('string');
   expect(identity.tenantUserDTO.name).toBeTruthy();
-  if (role === 'admin') {
-    // 原管理员登录已处理此竞争：前端自己的身份读取可能触发相同地址的文档跳转。
-    const target = '/question/course/manage';
-    try { await page.goto(target, { waitUntil: 'domcontentloaded' }); }
-    catch (error) {
-      if (!(error instanceof Error) || !error.message.includes('interrupted by another navigation') ||
-        !error.message.includes(target)) throw error;
-    }
-    await expect(page).toHaveURL(url => url.pathname === target);
-    await expect(page.locator('.aside-nav')).toBeVisible({ timeout: 60_000 });
-  }
+  if (role === 'admin') await waitForAdminLanding(page);
   return { page, token, id: identity.tenantUserDTO.id, name: identity.tenantUserDTO.name };
 }
 

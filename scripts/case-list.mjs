@@ -31,7 +31,7 @@ for (const suite of report.suites ?? []) walk(suite);
 
 // 用例名开头的 REMOTE-MATCH-09 这类标记单独成一列，便于和需求单对号。
 const splitId = title => {
-  const matched = /^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+)\s+(.*)$/.exec(title);
+  const matched = /^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-\d+(?:\.\d+)*)\s+(.*)$/.exec(title);
   return matched ? { id: matched[1], name: matched[2] } : { id: '', name: title };
 };
 
