@@ -200,10 +200,18 @@ pnpm run test:bmtk --grep CASE-008 --headed
 
 ### 泰语模板导入及PDF字形（CASE-009 / TAPD 1007366）
 
-Word与Excel两条入口位于 `projects/bmtk/journeys/thai-template-output.spec.ts`，检查原八题语料导入、保存回读、预览和实际下载PDF，重点验证泰语选项及声调完整、四个词语的实际字形可区分。配置、Python依赖和证据说明见 [CASE-009运行说明](docs/CASE-009-泰语模板导入及PDF字形.md)。
+Word与Excel两条入口位于 `projects/bmtk/journeys/thai-template-output.spec.ts`，检查原八题语料导入、保存回读、预览和实际下载PDF，重点验证泰语选项及声调完整、四个词语的实际字形可区分。
 
 ```bash
 pnpm run test:bmtk --grep CASE-009 --headed
 ```
 
-使用非AI模板入口，实际只登录管理员；不清库。2026-10-27本地Word、Excel完整业务回归均通过，不代替远端环境验收。
+使用非AI模板入口，沿用现有六角色配置校验，实际只登录管理员；运行前释放管理员的其他测试窗口，CLI与UI不同时执行。每条新建并保留独立E2E学科和历史试卷，不清库。
+
+`BMTK_PDF_PYTHON` 指向的Python需要 `openpyxl`、`PyMuPDF`、`Pillow`、`pypdf>=5,<7`，在登录和创建数据前检查依赖。请在对应虚拟环境补装，将下面的 `python` 替换为该解释器：
+
+```bash
+python -m pip install openpyxl PyMuPDF Pillow 'pypdf>=5,<7'
+```
+
+不依赖产品源码仓或本机LibreOffice。测试附件保留实际上传文件、保存回读、全部预览图、下载PDF、泰语词语局部图及字形审计。2026-10-27本地Word、Excel完整业务回归均通过，不代替远端环境验收。
