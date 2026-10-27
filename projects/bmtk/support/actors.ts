@@ -1,6 +1,7 @@
-import { expect, type Browser, type BrowserContext, type Page, type Route } from '@playwright/test';
+import { expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import type { BmtkConfig, Credentials, Role } from './config';
-import { businessResponse, readApi, responseFor, parseJson, type Envelope } from './api';
+import { businessResponse, responseFor } from './api';
+import { selectTenant } from './tenant-selection';
 import { waitForAdminLanding } from './admin-landing';
 
 export interface Actor { page: Page; token: string; id: string; name: string }
@@ -24,40 +25,16 @@ async function login(page: Page, credentials: Credentials, tenantName: string, r
   if (new URL(page.url()).pathname !== '/pick') throw new Error('账号要求改密，请预先初始化专用测试账号');
   const tenant = page.locator('div.cursor-pointer').filter({ has: page.getByText(tenantName, { exact: true }) });
   await expect(tenant, '组织必须按完整名称唯一匹配').toHaveCount(1);
-  // 原实现已验证的导航竞争处理：缓冲真实响应后原样透传，不伪造登录结果。
-  const pattern = '**/tenant/refreshToken*';
   const previousToken = await readToken(page);
-  let resolveSelection!: () => void;
-  let rejectSelection!: (error: unknown) => void;
-  const selected = new Promise<void>((resolve, reject) => { resolveSelection = resolve; rejectSelection = reject; });
-  const timer = setTimeout(() => rejectSelection(new Error('选择组织后未收到会话刷新回执')), 30_000);
-  const handler = async (route: Route) => {
-    try {
-      const response = await route.fetch();
-      const body = parseJson<Envelope<unknown>>(await response.text());
-      expect(response.ok()).toBe(true);
-      expect(body.code, '选择组织必须业务成功').toBe('E200');
-      await route.fulfill({ response });
-      resolveSelection();
-    } catch (error) {
-      rejectSelection(error);
-      await route.abort().catch(() => undefined);
-    }
-  };
-  await page.route(pattern, handler, { times: 1 });
-  try {
-    await Promise.all([tenant.click(), selected]);
-    await expect.poll(() => readToken(page), { timeout: 30_000 }).not.toBe(previousToken);
-    await expect.poll(() => readToken(page), { timeout: 30_000 }).not.toBe('');
-    // 尚未被分配任务的成员可以仍在 /pick，最终以真实身份接口确认会话。
-  } finally { clearTimeout(timer); await page.unroute(pattern, handler); }
+  const identity = await selectTenant(page, tenant, async () => {
+    if (role === 'admin') await waitForAdminLanding(page);
+  });
+  await expect.poll(() => readToken(page), { timeout: 30_000 }).not.toBe(previousToken);
+  await expect.poll(() => readToken(page), { timeout: 30_000 }).not.toBe('');
   const token = await readToken(page);
-  const identity = await readApi<{ tenantUserDTO: { id: string; code: string; name: string } }>(
-    page.request, token, '/user/tenant-user/get-user-info');
   expect(identity.tenantUserDTO.code, '当前登录者必须是指定账号').toBe(credentials.username);
   expect(typeof identity.tenantUserDTO.id).toBe('string');
   expect(identity.tenantUserDTO.name).toBeTruthy();
-  if (role === 'admin') await waitForAdminLanding(page);
   return { page, token, id: identity.tenantUserDTO.id, name: identity.tenantUserDTO.name };
 }
 

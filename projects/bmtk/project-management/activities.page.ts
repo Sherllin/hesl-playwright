@@ -109,7 +109,12 @@ export class ActivitiesPage {
   }
 
   async finishPaperReview() {
+    const current = new URL(this.page.url());
     await this.finish('审卷', '/paper-review/end');
-    await expect(this.page.getByRole('heading', { name: '试卷样式关联', exact: true })).toBeVisible();
+    // E200先完成，Next路由内容可能仍在加载；等待自动跳转，避免发起竞争导航。
+    await expect(this.page).toHaveURL(url => url.origin === current.origin
+      && url.pathname === '/project/my/makePaper'
+      && url.searchParams.get('projectId') === current.searchParams.get('projectId'), { timeout: 90_000 });
+    await expect(this.page.getByRole('heading', { name: '试卷样式关联', exact: true })).toBeVisible({ timeout: 60_000 });
   }
 }
