@@ -6,13 +6,13 @@ import { businessResponse, responseFor } from '../support/api';
 export class ActivitiesPage {
   constructor(private readonly page: Page) { }
 
-  private async addExpert(kind: string, name: string) {
+  private async addExpert(kind: string, name: string | string[]) {
     const heading = this.page.getByRole('heading', { name: `${kind}专家`, exact: true });
     await expect(heading).toBeVisible({ timeout: 60_000 });
     const section = heading.locator('xpath=ancestor::div[.//button[contains(normalize-space(.),"添加")]][1]');
     await section.getByRole('button', { name: /添\s*加/ }).click();
     const saved = responseFor(this.page, 'POST', '/qrProject/replace-member');
-    await selectMembersInModal(this.page, [name]);
+    await selectMembersInModal(this.page, typeof name === 'string' ? [name] : name);
     await businessResponse(await saved);
   }
 
@@ -33,8 +33,19 @@ export class ActivitiesPage {
     await businessResponse(await finished);
   }
 
-  async createQuestionTask(input: { name: string; author: string; quantity: number }) {
-    await this.addExpert('出题', input.author);
+  async configureQuestionExperts(names: string[]) {
+    await this.addExpert('出题', names);
+  }
+
+  async startQuestionCreation() {
+    await this.start('出题', /\/question-creation\/start\/\d+$/);
+  }
+
+  async createQuestionTask(
+    input: { name: string; author: string; quantity: number },
+    options: { expertAlreadyConfigured?: boolean; deferStart?: boolean } = {},
+  ) {
+    if (!options.expertAlreadyConfigured) await this.addExpert('出题', input.author);
     await this.page.getByRole('button', { name: /新建出题任务/ }).hover();
     await this.page.getByRole('menuitem', { name: /单个(?:创建|出题任务)/ }).click();
     const drawer = this.page.locator('.ant-drawer-content').filter({ hasText: '新建单个出题任务' });
@@ -48,7 +59,7 @@ export class ActivitiesPage {
     await drawer.getByRole('button', { name: /确\s*认/ }).click();
     await businessResponse(await created);
     await expect(drawer).toBeHidden();
-    await this.start('出题', /\/question-creation\/start\/\d+$/);
+    if (!options.deferStart) await this.startQuestionCreation();
   }
 
   async openQuestionReview(reviewer: string) {
