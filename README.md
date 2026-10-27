@@ -70,6 +70,29 @@ python3 -m venv .venv
 
 所有工具与37题语料、科学图片都在本工程内，不需要产品源码仓或原来的 `uv --project backend`。药学原题的答案是明确标注的测试补充值，语料说明见 `projects/bmtk/paper-make/fixtures/README.md`。
 
+### 审题改判与提交竞争（CASE-003 / TAPD 1007364）
+
+入口为 `projects/bmtk/journeys/review-submission-race.spec.ts`，UI 面板会自动发现：
+
+| 编号 | 原用例 | 检查内容 |
+|---|---|---|
+| CASE-003.1 | REMOTE-REVIEW-RACE-01 | 同一审题任务同时提交与驳回，按实际先后返回版本冲突或提交后禁止改判 |
+| CASE-003.2 | REMOTE-REVIEW-TABS-01 | 正常双页签对照：两次改判拒绝旧快照，重新确认后成功提交 |
+
+```bash
+# 先跑正常对照；两条都跑可使用 --grep CASE-003。
+pnpm run test:bmtk --grep CASE-003.2 --headed
+pnpm run test:bmtk --grep CASE-003.1 --headed
+```
+
+每条使用 `.env` 的管理员、负责人、出题专家和审题专家，新建独立的 E2E 学科、题库、项目及两道单选题并保留数据；不同用例不复用项目。运行前确认账号窗口已释放，CLI 与 UI 不要同时运行。配置继续沿用本工程的六角色校验，但本组只登录上述四个角色，不需要 PDF/Python，也不读取原源码仓的配置或账号池。不会清库。
+
+两页签共享同一审题登录会话。先通过真实 UI 驳回再恢复通过，检查决定版本递增、旧快照整批冲突且正式历史为零；并发模式下用两个真实请求同时发出提交与驳回，不伪造后端结果。改判先完成则检查版本冲突并显式恢复提交；提交先完成则检查改判被业务拒绝。`code=500` 保持普通 FAIL，不标记预期失败。并发只验证当次实际发生的先后分支；一次 PASS 不代表两种顺序都已实跑覆盖。
+
+成功后继续核对任务完成、正文保密、审批历史仅两条、提交重放不增加历史、提交后不能改判，以及项目完成后的原题 ID、题干、选项和答案完整唯一入库。附件 `review-race-fixture` 记录独立项目和题目身份，`review-race-response-evidence` 保存并发真实响应；失败保留 trace，运行记录仍写入本机 `docs/测试运行记录.md`。本组保留接口和页面状态断言，没有迁入原仓的通用系统异常监控器。
+
+原仓 2026-10-16 的结果是并发 FAIL、正常对照 PASS，仅作历史参考；迁入后的真实环境结果以本工程重新执行为准。
+
 ### 题干双栏、三栏布局导出 PDF（CASE-005 / TAPD 1007416）
 
 入口为 `projects/bmtk/journeys/column-layout-output.spec.ts`，现有 UI 面板自动发现两条：
