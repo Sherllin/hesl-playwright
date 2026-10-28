@@ -20,11 +20,13 @@ export class ComposePage {
     expect(observed, '选题列表必须包含本次审核入库的原题').toBeTruthy();
     expect(observed!.question).toBe(source.question);
     const drawer = this.page.locator('.ant-drawer-content').filter({ hasText: '添加题目' });
-    const card = drawer.locator('[data-confidential-target-type="QUESTION"]').filter({ hasText: stem });
+    const card = drawer.locator(`[data-confidential-target-type="QUESTION"][data-confidential-target-id="${source.id}"]`);
     await expect(card).toHaveCount(1);
-    await card.locator('xpath=ancestor::div[.//button[contains(.,"加入试卷")]][1]')
-      .getByRole('button', { name: /加入试卷/ }).click();
-    await expect(drawer.getByRole('button', { name: /取消添加/ })).toBeVisible();
+    await expect(card).toContainText(stem);
+    // 题目正文与操作区同属直接父题卡；按钮文案变化后仍定位同一原题。
+    const question = card.locator('..');
+    await question.getByRole('button', { name: '加入试卷', exact: true }).click();
+    await expect(question.getByRole('button', { name: '取消添加', exact: true })).toBeVisible();
     await drawer.getByRole('button', { name: /close|关闭/i }).click();
     await expect(drawer).toBeHidden();
   }
