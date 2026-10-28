@@ -290,3 +290,20 @@ pnpm run test:bmtk --grep CASE-013 --headed
 沿用 `.env` 六角色配置校验，只登录管理员、负责人、出题和审题四个独立账号。运行前确认这四个账号窗口已释放，CLI 与 UI 不同时运行。删除用例不需要 Python；全量覆盖只需现有 `BMTK_PDF_PYTHON` 对应 Python 的 openpyxl，无 PDF 前置。只操作本次新建学科，不清库、不读取产品源码仓配置或旧账号池。
 
 保留原 `SUBJECT-CATALOG-FULL-GUARDS` / `SUBJECT-CATALOG-DELETE-GUARDS` 的业务检查，任何 `10302` 均为普通 FAIL。未覆盖非零模板、任务知识点范围及跨题库权限；两道题和原出题任务保留不能替代这些覆盖。2026-10-28用户在本地环境运行两条均通过且无重试；编写、运行证据及原脚本差异见[迁移记录](docs/2026-10-28-tapd-1007399-migration.md)。
+
+### PDF 图片裁切与遮挡文字（CASE-014 / TAPD 1007402）
+
+入口 `projects/bmtk/journeys/image-layout-output.spec.ts`；现有 UI 面板会发现两条：
+
+- `CASE-014.1`：单栏试卷、带题干答案、仅答案三种 PDF。
+- `CASE-014.2`：双栏的同三种 PDF，另检查图片不跨栏缝。
+
+```bash
+pnpm run test:bmtk --grep 'CASE-014.1' --headed
+# 两种版式串行运行：
+pnpm run test:bmtk --grep 'CASE-014'
+```
+
+沿用本机 `.env` 的六角色和 `BMTK_PDF_PYTHON`（PyMuPDF、Pillow、pypdf）。运行前确认六个账号已独占释放，CLI 与 UI 不要同时跑。每条新建并保留独立学科、样式、项目和三道题，不清库、不改已有题目，不读取产品源码仓。先用正常的版本化出题工作区 API 准备并确认含图片的单选、组合和简答题，再经真实 UI 审题、组卷暂存重进、审卷、制卷及下载；该专项不声称覆盖编辑器图片上传、原 Word 模板解析或旧确认键缓存迁移。
+
+检查实际 PDF 内原图身份/次数、比例、四角是否真的绘制完整、可打印页面/栏位范围、题号和正文是否被图片压住，以及跨页材料/答案完整。保存三份原始 PDF、每页截图、图片与文字坐标和本轮项目/定稿身份到报告附件；图片检查失败仍判整条 FAIL。无需手动准备题库、图片或 Word 文件，也不用重启已有 UI 面板。2026-10-28 用户本地两条均通过且无重试；验证与覆盖边界见[编写记录](docs/2026-10-28-tapd-1007402-migration.md)。
